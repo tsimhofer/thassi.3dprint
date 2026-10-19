@@ -1,0 +1,36 @@
+{
+  "name": "thassi.3dprint",
+  "version": "1.0.0",
+  "description": "Thassi 3D Druck Modul (thassi.3dprint) — KI-gestützte 3D-Objektgenerierung (Antigravity/Gemini), interaktiver 3D-Editor, STL/3MF/G-Code Slicer & direkte BambuLab P1S LAN-Steuerung (MQTT 8883 / FTPS 990 / SSDP).",
+  "private": false,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tsimhofer/thassi.3dprint.git"
+  },
+  "main": "./dist/backend.mjs",
+  "exports": {
+    ".": "./src/backend/index.ts",
+    "./mesh-engine": "./src/shared/mesh-engine.ts",
+    "./bambu-lan": "./src/backend/bambu-lan.ts",
+    "./ai-cad": "./src/backend/ai-cad-generator.ts",
+    "./manifest": "./thassi.app.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "thassi",
+    "home-assistant",
+    "bambulab",
+    "p1s",
+    "3d-print",
+    "3mf",
+    "stl",
+    "gcode",
+    "antigravity",
+    "gemini"
+  ],
+  "author": "Thomas Simhofer",
+  "license": "MIT"
+}

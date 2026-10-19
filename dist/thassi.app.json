@@ -1,0 +1,8 @@
+{
+  "id": "3d-print",
+  "name": "3D Druck",
+  "version": "1.0.0",
+  "description": "Thassi 3D Druck Studio (thassi.3dprint) — KI-gestützte 3D-Objektgenerierung (Antigravity/Gemini), interaktiver 3D-Editor, STL/3MF/G-Code Slicer & direkte BambuLab LAN-Steuerung (MQTT 8883 / FTPS 990 / SSDP).",
+  "icon": "mdi:printer-3d-nozzle",
+  "category": "general"
+}
