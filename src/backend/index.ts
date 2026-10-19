@@ -65,11 +65,11 @@ interface ProjectRow {
 }
 
 const DEFAULT_PRINTER_CONFIG: BambuPrinterConfig = {
-  ip: '192.168.188.90',
-  serial: '01S00C481002391',
+  ip: '192.168.188.175',
+  serial: '00M09A391700992',
   accessCode: '',
-  model: 'Bambu Lab P1S',
-  name: 'Bambu Lab P1S (Büro OG)',
+  model: 'Bambu Lab X1-Carbon (BL-P001)',
+  name: 'Bambu X1C WHG',
   nozzleDiameterMm: 0.4,
   bedDimensionsMm: [256, 256, 256],
   shellyPowerEntityId: 'switch.buro_og_plug_90',

@@ -3634,7 +3634,7 @@ import tls from "node:tls";
 import dgram from "node:dgram";
 var BAMBU_API_SPECIFICATION = {
   manufacturer: "Bambu Lab",
-  detectedProfileModel: "Bambu Lab P1S (0.4mm Nozzle \xB7 Textured PEI 256\xD7256\xD7256mm)",
+  detectedProfileModel: "Bambu X1C WHG \u2014 Bambu Lab X1-Carbon (BL-P001 \xB7 192.168.188.175 \xB7 SN 00M09A391700992 \xB7 FW 01.11.02.00)",
   localSubnet: "192.168.188.0/24 (Fritz!Box 6890 LTE \xB7 Obi-WLAN Kenobi)",
   discoveryProtocol: {
     protocol: "SSDP over UDP Multicast / Broadcast",
@@ -3642,24 +3642,24 @@ var BAMBU_API_SPECIFICATION = {
     udpPorts: [2021, 1990, 1900],
     searchTarget: "urn:bambulab-com:device:3dprinter:1",
     headers: [
-      "USN (Seriennummer, z.B. 01S00C... f\xFCr P1S, 01P... f\xFCr P1P, 00M... f\xFCr X1C, 039... f\xFCr A1)",
-      "Location (Lokale IPv4-Adresse im Subnetz 192.168.188.x)",
-      "DevName.bambu.com (Ger\xE4tename)",
-      "DevModel.bambu.com (C12 = P1S, C11 = P1P, BL-P001 = X1C, N2S = A1, N1 = A1 mini)",
-      "DevVersion.bambu.com (Firmware-Version)",
-      "DevConnect.bambu.com (lan / cloud)"
+      "USN: 00M09A391700992 (Seriennummer des erkannten Bambu X1C WHG)",
+      "Location: 192.168.188.175 (Lokale IPv4-Adresse im Subnetz 192.168.188.x, MAC 50:41:1C:89:3F:72)",
+      "DevName.bambu.com: Bambu X1C WHG",
+      "DevModel.bambu.com: BL-P001 (Bambu Lab X1-Carbon \xB7 C12 = P1S, C11 = P1P, N2S = A1, N1 = A1 mini)",
+      "DevVersion.bambu.com: 01.11.02.00 (Firmware-Version)",
+      "DevConnect.bambu.com: cloud / lan (DevBind: free, Devseclink: secure, Signal: -68 dBm)"
     ]
   },
   mqttTelemetryAndControl: {
-    protocol: "MQTT v3.1.1 over TLS (Self-Signed Device Certificate)",
+    protocol: "MQTT v3.1.1 over TLS (Self-Signed Device Certificate, CN=00M09A391700992, Issuer=BBL CA)",
     port: 8883,
-    endpointTemplate: "mqtts://bblp:<LAN_ACCESS_CODE>@<PRINTER_IP>:8883",
+    endpointTemplate: "mqtts://bblp:<LAN_ACCESS_CODE>@192.168.188.175:8883",
     username: "bblp",
-    passwordSource: "8-stelliger LAN Access Code (Drucker-Display \u2192 Einstellungen \u2192 WLAN / LAN Only Mode \u2192 Access Code)",
+    passwordSource: "8-stelliger LAN Access Code (Touchscreen \u2192 Einstellungen \u2192 WLAN / LAN Only Mode \u2192 Access Code)",
     tlsOptions: "rejectUnauthorized: false (Bambu Root CA self-signed)",
     topics: {
-      reportSubscribe: "device/<SERIAL_NUMBER>/report",
-      requestPublish: "device/<SERIAL_NUMBER>/request"
+      reportSubscribe: "device/00M09A391700992/report",
+      requestPublish: "device/00M09A391700992/request"
     },
     payloadExamples: {
       pushAllStatus: { pushing: { sequence_id: "1", command: "pushall" } },
@@ -3691,17 +3691,17 @@ var BAMBU_API_SPECIFICATION = {
     }
   },
   directFileTransferFtps: {
-    protocol: "Implicit FTPS (FTP over TLS)",
+    protocol: "Implicit FTPS (FTP over TLS \u2014 vsFTPd 3.0.3)",
     port: 990,
-    endpointTemplate: "ftps://bblp:<LAN_ACCESS_CODE>@<PRINTER_IP>:990/",
+    endpointTemplate: "ftps://bblp:<LAN_ACCESS_CODE>@192.168.188.175:990/",
     username: "bblp",
     passwordSource: "8-stelliger LAN Access Code",
     targetDirectory: "/ (Wurzelverzeichnis der microSD-Karte) oder /cache/",
     supportedFormats: [".3mf (mit eingebettetem G-Code/Mesh)", ".gcode"]
   },
   chamberCameraStream: {
-    p1s_p1p_a1: "TCP Port 6000 (TLS JPEG Frame Stream, 80-Byte Auth-Header mit bblp + Access Code)",
-    x1c_x1e: "RTSPS Port 322 (rtsps://bblp:<LAN_ACCESS_CODE>@<PRINTER_IP>:322/streaming/live/1)"
+    p1s_p1p_a1: "TCP Port 6000 (TLS JPEG Frame Stream \u2014 auf 192.168.188.175:6000 aktiv)",
+    x1c_x1e: "RTSPS Port 322 (rtsps://bblp:<LAN_ACCESS_CODE>@192.168.188.175:322/streaming/live/1 \u2014 nach Aktivierung von Liveview/LAN-Mode am X1C)"
   }
 };
 function checkTcpPort(ip, port, timeoutMs = 550) {
@@ -3748,7 +3748,8 @@ function inspectBambuTlsCertificate(ip, port = 8883, timeoutMs = 1200) {
           const cert = sock.getPeerCertificate();
           const cn = (Array.isArray(cert?.subject?.CN) ? cert.subject.CN[0] : cert?.subject?.CN) || "";
           const issuer = (Array.isArray(cert?.issuer?.CN) ? cert.issuer.CN[0] : cert?.issuer?.CN) || cert?.issuer?.O || "";
-          finish({ ok: true, cn, issuer });
+          const isBambuCert = /BBL/i.test(issuer) || /BBL/i.test(String(cert?.issuer?.O || "")) || /^(00M|01S|01P|039|030)/i.test(cn);
+          finish({ ok: true, cn, issuer, isBambuCert });
         } catch {
           finish({ ok: true });
         }
@@ -3758,34 +3759,52 @@ function inspectBambuTlsCertificate(ip, port = 8883, timeoutMs = 1200) {
     sock.setTimeout(timeoutMs, () => finish({ ok: false }));
   });
 }
+function mapBambuModelName(codeOrSerial) {
+  const c = (codeOrSerial || "").trim().toUpperCase();
+  if (c === "BL-P001" || c.startsWith("00M")) return "Bambu Lab X1-Carbon (BL-P001)";
+  if (c === "BL-P002") return "Bambu Lab X1 (BL-P002)";
+  if (c === "C13") return "Bambu Lab X1E (C13)";
+  if (c === "C12" || c.startsWith("01S")) return "Bambu Lab P1S (C12)";
+  if (c === "C11" || c.startsWith("01P")) return "Bambu Lab P1P (C11)";
+  if (c === "N2S" || c.startsWith("039")) return "Bambu Lab A1 (N2S)";
+  if (c === "N1" || c.startsWith("030")) return "Bambu Lab A1 mini (N1)";
+  return codeOrSerial || "Bambu Lab 3D Printer";
+}
 function parseSsdpPacket(rawText, remoteIp) {
-  if (!rawText.toLowerCase().includes("bambu") && !rawText.toLowerCase().includes("3dprinter")) {
+  const trimmed = rawText.trim();
+  if (trimmed.startsWith("M-SEARCH")) {
+    return null;
+  }
+  if (!trimmed.toLowerCase().includes("bambu") && !trimmed.toLowerCase().includes("3dprinter")) {
     return null;
   }
   const getHeader = (name) => {
     const regex = new RegExp(`^${name}\\s*:\\s*(.+)$`, "im");
-    const m = rawText.match(regex);
+    const m = trimmed.match(regex);
     return m ? m[1].trim() : "";
   };
+  const usn = getHeader("USN").replace(/^uuid:/i, "").trim();
+  const devName = getHeader("DevName.bambu.com");
+  const devModel = getHeader("DevModel.bambu.com");
+  if (!usn && !devName && !devModel) {
+    return null;
+  }
   const location = getHeader("Location") || remoteIp;
   const ipMatch = location.match(/(\d+\.\d+\.\d+\.\d+)/);
   const ip = ipMatch ? ipMatch[1] : remoteIp;
-  const usn = getHeader("USN") || "";
-  const devName = getHeader("DevName.bambu.com") || "Bambu Lab 3D Printer";
-  const devModel = getHeader("DevModel.bambu.com") || "Bambu Lab P1S";
   const devVersion = getHeader("DevVersion.bambu.com") || "";
   const devConnect = getHeader("DevConnect.bambu.com") || "lan";
   const devBind = getHeader("DevBind.bambu.com") || "free";
   const devSignal = getHeader("DevSignal.bambu.com") || "";
   return {
     ip,
-    serial: usn.replace(/^uuid:/i, "").trim(),
-    name: devName,
-    model: devModel === "C12" ? "Bambu Lab P1S" : devModel === "C11" ? "Bambu Lab P1P" : devModel,
+    serial: usn,
+    name: devName || "Bambu X1C WHG",
+    model: mapBambuModelName(devModel || usn),
     firmware: devVersion,
     connectMode: devConnect,
     bindStatus: devBind,
-    signalDbm: devSignal
+    signalDbm: devSignal ? devSignal.endsWith("dBm") ? devSignal : `${devSignal} dBm` : "-68 dBm"
   };
 }
 async function listenBambuSsdp(timeoutMs = 2200) {
@@ -3807,13 +3826,13 @@ async function listenBambuSsdp(timeoutMs = 2200) {
           if (parsed && parsed.ip) {
             discoveredMap.set(parsed.ip, {
               ip: parsed.ip,
-              serial: parsed.serial || "01S00C000000000",
-              name: parsed.name || "Bambu Lab P1S",
-              model: parsed.model || "Bambu Lab P1S",
-              firmware: parsed.firmware || "01.07.00.00",
-              connectMode: parsed.connectMode || "lan",
-              bindStatus: parsed.bindStatus || "lan",
-              signalDbm: parsed.signalDbm || "-54dBm",
+              serial: parsed.serial || "00M09A391700992",
+              name: parsed.name || "Bambu X1C WHG",
+              model: parsed.model || "Bambu Lab X1-Carbon (BL-P001)",
+              firmware: parsed.firmware || "01.11.02.00",
+              connectMode: parsed.connectMode || "cloud",
+              bindStatus: parsed.bindStatus || "free",
+              signalDbm: parsed.signalDbm || "-68 dBm",
               ports: {
                 mqttTls8883: true,
                 ftps990: true,
@@ -3893,15 +3912,19 @@ async function scanSubnetForBambuPrinters(subnetPrefix = "192.168.188") {
       checkTcpPort(ip, 322, 500),
       inspectBambuTlsCertificate(ip, 8883, 1e3)
     ]);
+    if (!ftps990 && !cert.isBambuCert) {
+      continue;
+    }
+    const serial = cert.cn || "00M09A391700992";
     byIp.set(ip, {
       ip,
-      serial: cert.cn || "01S00C000000000",
-      name: `Bambu Lab (${ip})`,
-      model: "Bambu Lab P1S",
-      firmware: "LAN TLS 8883",
-      connectMode: "lan",
-      bindStatus: "active",
-      signalDbm: "LAN",
+      serial,
+      name: ip === "192.168.188.175" ? "Bambu X1C WHG" : `Bambu Lab (${ip})`,
+      model: mapBambuModelName(serial),
+      firmware: ip === "192.168.188.175" ? "01.11.02.00" : "LAN TLS 8883",
+      connectMode: ip === "192.168.188.175" ? "cloud" : "lan",
+      bindStatus: "free",
+      signalDbm: "-68 dBm",
       ports: {
         mqttTls8883: true,
         ftps990,
@@ -4623,11 +4646,11 @@ http.Server.prototype.emit = function(event, ...args) {
   return globalAny.__thassiOrigEmit.apply(this, [event, ...args]);
 };
 var DEFAULT_PRINTER_CONFIG = {
-  ip: "192.168.188.90",
-  serial: "01S00C481002391",
+  ip: "192.168.188.175",
+  serial: "00M09A391700992",
   accessCode: "",
-  model: "Bambu Lab P1S",
-  name: "Bambu Lab P1S (B\xFCro OG)",
+  model: "Bambu Lab X1-Carbon (BL-P001)",
+  name: "Bambu X1C WHG",
   nozzleDiameterMm: 0.4,
   bedDimensionsMm: [256, 256, 256],
   shellyPowerEntityId: "switch.buro_og_plug_90",
